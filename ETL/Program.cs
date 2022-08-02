@@ -1,2 +1,11 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using ETL.Service.Implementations;
+using ETL.Service.Interfaces;
+
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        IUI ui = new UI();
+        await ui.Menu();
+    }
+}

@@ -1,4 +1,6 @@
-﻿using ETL.Service.Interfaces;
+﻿using ETL.DTO;
+using ETL.Service.Interfaces;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,24 +12,38 @@ namespace ETL.Service.Implementations
 {
     public class UI : IUI
     {
+        ETLService _etlService;
         private CancellationTokenSource _cancelSource;
         StringBuilder _menu;
         System.Timers.Timer _timer;
-        public UI()
+        ETLSettings _etlSettings;
+        FileSystemWatcher _watcher;
+        public UI(IOptions<ETLSettings> etlSettings, ETLService etlService)
         {
+            _etlSettings = etlSettings.Value;
             _timer = new System.Timers.Timer();
             _timer.Enabled = false;
             _timer.AutoReset = true;
             _timer.Interval = 5000;
-            _timer.Elapsed += ProcessPaymentTransactions;
+            _timer.Elapsed += CheckMidnight;
             _menu = new StringBuilder("8.Start ETL service\n");
             _menu.Append("9.Stop\n");
             _menu.Append("0.Выход\n");
+            _watcher = new FileSystemWatcher();
+            _watcher.NotifyFilter = NotifyFilters.LastWrite;
+            _watcher.Created += ProcessPaymentTransactions;
+            _etlService = etlService;
+            _watcher.Path = _etlService.GetPathFolderA();
         }
 
-        private async void ProcessPaymentTransactions(object? sender, ElapsedEventArgs e)
+        private async void ProcessPaymentTransactions(object sender, FileSystemEventArgs e)
         {
-            throw new NotImplementedException();
+            await _etlService.StartProcess(_cancelSource.Token);
+        }
+
+        private async void CheckMidnight(object? sender, ElapsedEventArgs e)
+        {
+            //throw new NotImplementedException();
         }
 
         public async Task Menu()
@@ -44,10 +60,14 @@ namespace ETL.Service.Implementations
                     case '8':
                         _cancelSource = new CancellationTokenSource();
                         _timer.Start();
+                        await _etlService.StartProcess(_cancelSource.Token);
+                        _watcher.EnableRaisingEvents = true;
                         break;
                     case '9':
                         _cancelSource?.Cancel();
                         _timer.Stop();
+                        _watcher.EnableRaisingEvents = false;
+
                         break;
                     case '0':
                         return;

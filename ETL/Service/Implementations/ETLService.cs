@@ -15,13 +15,13 @@ namespace ETL.Service.Implementations
             _fileService = fileService;
         }
 
-        public async Task StartProcess(CancellationToken cancelToken)
+        public async Task StartProcess()
         {
             if (_fileService.GetFiles())
             {
-                if (_fileService.ReadCSV())
+                if (await _fileService.ReadCSVAsync())
                     Console.WriteLine("CSV files have been read");
-                if (_fileService.ReadTXT())
+                if (await _fileService.ReadTXTAsync())
                     Console.WriteLine("TXT files have been read");
             }
         }

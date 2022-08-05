@@ -67,7 +67,7 @@ namespace ETL.Service.Implementations
             }
         }
 
-        public bool ReadCSV()
+        public async Task<bool> ReadCSVAsync()
         {
             try
             {
@@ -108,6 +108,9 @@ namespace ETL.Service.Implementations
                     }
                     _metaFiles.ParsedFiles.Add(item);
                     var json = _transformService.TransactionsGroupByCityAndService(transactionDTOs);
+                    if (await CreateOutputFile(json))
+                        Console.WriteLine("CSV File create");
+                    File.Delete(item);
                 }
                 _metaFiles.CSVFiles.Clear();
                 return true;
@@ -118,7 +121,7 @@ namespace ETL.Service.Implementations
             }
             
         }
-        public bool ReadTXT()
+        public async Task<bool> ReadTXTAsync()
         {
             try
             {
@@ -169,6 +172,9 @@ namespace ETL.Service.Implementations
                     }
                     _metaFiles.ParsedFiles.Add(item);
                     var json = _transformService.TransactionsGroupByCityAndService(transactionDTOs);
+                    if(await CreateOutputFile(json))
+                        Console.WriteLine("TXT File create");
+                    File.Delete(item);
                 }
                 _metaFiles.TXTFiles.Clear();
                 return true;
@@ -177,7 +183,14 @@ namespace ETL.Service.Implementations
             {
                 return false;
             }
-            
+        }
+
+        private async Task<bool> CreateOutputFile(string json) {
+            var dateFolder = Path.Combine(_etlSettings.FolderB, DateTime.Now.ToShortDateString());
+            if (!Directory.Exists(dateFolder))
+                Directory.CreateDirectory(dateFolder);
+            await File.WriteAllLinesAsync(Path.Combine(dateFolder, $"output_{_metaFiles.ParsedFiles.Count}.json"), new string[] { json });
+            return true;
         }
     }
 }

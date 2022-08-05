@@ -30,7 +30,8 @@ namespace ETL.Service.Implementations
             _menu.Append("9.Stop\n");
             _menu.Append("0.Выход\n");
             _watcher = new FileSystemWatcher();
-            _watcher.NotifyFilter = NotifyFilters.LastWrite;
+            _watcher.NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite
+           | NotifyFilters.FileName | NotifyFilters.DirectoryName;
             _watcher.Created += ProcessPaymentTransactions;
             _etlService = etlService;
             _watcher.Path = _etlService.GetPathFolderA();
@@ -38,7 +39,7 @@ namespace ETL.Service.Implementations
 
         private async void ProcessPaymentTransactions(object sender, FileSystemEventArgs e)
         {
-            await _etlService.StartProcess(_cancelSource.Token);
+            await _etlService.StartProcess();
         }
 
         private async void CheckMidnight(object? sender, ElapsedEventArgs e)
@@ -60,7 +61,7 @@ namespace ETL.Service.Implementations
                     case '8':
                         _cancelSource = new CancellationTokenSource();
                         _timer.Start();
-                        await _etlService.StartProcess(_cancelSource.Token);
+                        await _etlService.StartProcess();
                         _watcher.EnableRaisingEvents = true;
                         break;
                     case '9':

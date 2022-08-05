@@ -19,13 +19,15 @@ namespace ETL.Service.Implementations
     {
         MetaFiles _metaFiles;
         ETLSettings _etlSettings;
+        TransformService _transformService;
         public string PathFolderA { get; private set; }
-        public FileService(IOptions<ETLSettings> etlSettings, MetaFiles metaFiles)
+        public FileService(IOptions<ETLSettings> etlSettings, MetaFiles metaFiles, TransformService transformService)
         {
             _etlSettings = etlSettings.Value;
             PathFolderA = _etlSettings.FolderA;
             CheckDirectories();
             _metaFiles = metaFiles;
+            _transformService = transformService;
         }
         public void CheckDirectories()
         {
@@ -79,6 +81,7 @@ namespace ETL.Service.Implementations
                 };
                 foreach (var item in _metaFiles.CSVFiles)
                 {
+                    List<TransactionDTO> transactionDTOs = new List<TransactionDTO>();
                     using (StreamReader streamReader = new StreamReader(item))
                     {
                         using (CsvReader csvReader = new CsvReader(streamReader, config))
@@ -88,6 +91,7 @@ namespace ETL.Service.Implementations
                                 try
                                 {
                                     var transaction = csvReader.GetRecord<TransactionDTO>();
+                                    transactionDTOs.Add(transaction);
                                     _metaFiles.ParsedLines.Add(csvReader.Parser.RawRecord);
                                 }
                                 catch (Exception)
@@ -97,7 +101,13 @@ namespace ETL.Service.Implementations
                             }
                         }
                     }
+                    if (!transactionDTOs.Any())
+                    {
+                        _metaFiles.InvalidFiles.Add(item);
+                        continue;
+                    }
                     _metaFiles.ParsedFiles.Add(item);
+                    var json = _transformService.TransactionsGroupByCityAndService(transactionDTOs);
                 }
                 _metaFiles.CSVFiles.Clear();
                 return true;
@@ -123,6 +133,7 @@ namespace ETL.Service.Implementations
                 };
                 foreach (var item in _metaFiles.TXTFiles)
                 {
+                    List<TransactionDTO> transactionDTOs = new List<TransactionDTO>();
                     using (StreamReader streamReader = new StreamReader(item))
                     {
                         using (CsvReader csvReader = new CsvReader(streamReader, config))
@@ -135,12 +146,13 @@ namespace ETL.Service.Implementations
                                     {
                                         FirstName = csvReader.GetField(0).Trim(),
                                         LastName = csvReader.GetField(1).Trim(),
-                                        Address = (csvReader.GetField(2) + csvReader.GetField(3) + csvReader.GetField(4)).Trim(new char[] { '\"', '“', ' ', '”' }),
+                                        Address = (csvReader.GetField(2) + "," + csvReader.GetField(3) + "," + csvReader.GetField(4)).Trim(new char[] { '\"', '“', ' ', '”' }),
                                         Payment = csvReader.GetField<decimal>(5, new CustomDecimalConverter()),
                                         Date = csvReader.GetField<DateTime>(6, new CustomDateTimeConverter()),
                                         AccountNumber = csvReader.GetField<long>(7, new CustomLongConverter()),
                                         Service = csvReader.GetField(8).Trim()
                                     };
+                                    transactionDTOs.Add(transaction);
                                     _metaFiles.ParsedLines.Add(csvReader.Parser.RawRecord);
                                 }
                                 catch (Exception)
@@ -150,7 +162,13 @@ namespace ETL.Service.Implementations
                             }
                         }
                     }
+                    if (!transactionDTOs.Any())
+                    {
+                        _metaFiles.InvalidFiles.Add(item);
+                        continue;
+                    }
                     _metaFiles.ParsedFiles.Add(item);
+                    var json = _transformService.TransactionsGroupByCityAndService(transactionDTOs);
                 }
                 _metaFiles.TXTFiles.Clear();
                 return true;

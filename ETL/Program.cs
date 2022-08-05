@@ -24,7 +24,7 @@ class Program
         //serviceCollection.AddSingleton<ETLSettings>();
         serviceCollection.AddSingleton<MetaFiles>();
         serviceCollection.AddSingleton<FileService>();
-        serviceCollection.AddTransient<ETLService>();
+        serviceCollection.AddTransient<IETLService, ETLService>();
         serviceCollection.AddTransient<TransformService>();
         serviceCollection.AddSingleton<IUI, UI>();
         //serviceCollection.AddLogging(configure => configure.AddConsole());

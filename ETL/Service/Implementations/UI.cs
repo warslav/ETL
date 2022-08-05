@@ -12,19 +12,21 @@ namespace ETL.Service.Implementations
 {
     public class UI : IUI
     {
-        ETLService _etlService;
+        IETLService _etlService;
         private CancellationTokenSource _cancelSource;
         StringBuilder _menu;
         System.Timers.Timer _timer;
         ETLSettings _etlSettings;
         FileSystemWatcher _watcher;
-        public UI(IOptions<ETLSettings> etlSettings, ETLService etlService)
+        TimeSpan timeBetween;
+        public UI(IOptions<ETLSettings> etlSettings, IETLService etlService)
         {
             _etlSettings = etlSettings.Value;
             _timer = new System.Timers.Timer();
             _timer.Enabled = false;
             _timer.AutoReset = true;
-            _timer.Interval = 5000;
+            timeBetween = DateTime.Today.AddDays(1) - DateTime.Now;
+            _timer.Interval = 1000 * timeBetween.Seconds;
             _timer.Elapsed += CheckMidnight;
             _menu = new StringBuilder("8.Start ETL service\n");
             _menu.Append("9.Stop\n");
@@ -44,7 +46,8 @@ namespace ETL.Service.Implementations
 
         private async void CheckMidnight(object? sender, ElapsedEventArgs e)
         {
-            //throw new NotImplementedException();
+            await _etlService.SaveMetaLog();
+            timeBetween = DateTime.Today.AddDays(1) - DateTime.Now;
         }
 
         public async Task Menu()
